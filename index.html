@@ -32,12 +32,12 @@
     {
         totalJumps = 2;
         currentJumps = 0;
+        scale = this.setScale(2);
         constructor(scene, x, y)
         {
             super(scene, x, y, 'player');
             scene.add.existing(this);
             scene.physics.add.existing(this);
-            this.setScale(2);
             this.setCollideWorldBounds(true);
             this.setGravityY(3000); //We will set gravity *per object* rather than for the scene!
         }
@@ -71,10 +71,10 @@
 
     function preload()
     {
-        this.load.image('wall', 'assets1/brickwall.png');
-        this.load.image('platform', 'assets1/street.png');
-        this.load.image('player', 'assets1/francois1.png');
-        this.load.image('dumpster', 'assets1/dumpster1.png');
+        this.load.image('wall', 'assets/brickwall.png');
+        this.load.image('platform', 'assets/street.png');
+        this.load.spritesheet('player', 'assets/francoisrun1.png', { frameWidth: 35, frameHeight: 50});
+        this.load.image('dumpster', 'assets/dumpster1.png');
     }
 
     function create()
@@ -82,12 +82,17 @@
         //Set the background origin to be at (0, 0) or top left corner of the image rather than the center of the image asset
        let background = this.add.tileSprite(0, 0, game.scale.width, game.scale.height, 'wall').setOrigin(0, 0);
 
+       //Create all animations       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
+       const mummyAnimation = this.anims.create({
+       key: 'walk',
+       frames: this.anims.generateFrameNumbers('player'),
+       frameRate: 16
+   });
 
        //Create the platforms and the player character set to collide with the platforms
        createPlatforms(this);
        player = new Player(this, 400, 400);
        this.physics.add.collider(player, platforms);
-
 
        //Set up user input
        cursors = this.input.keyboard.createCursorKeys();
@@ -130,14 +135,23 @@
         }
 
         //Handle player movements
-        if (cursors.left.isDown || keys.A.isDown)
+        if (NOT keys.A.isDown)
         {
+          player.play({ key: 'idle', repeat: 7 });
+        }
+        else if (cursors.left.isDown || keys.A.isDown)
+        {
+
+            player.play({ key: 'walk', repeat: 7 });
             player.setVelocityX(-400);
+            scale = player.setScale(-2, 2);
         }
 
-        if (cursors.right.isDown || keys.D.isDown)
+        else if (cursors.right.isDown || keys.D.isDown)
         {
             player.setVelocityX(400);
+            player.play({ key: 'walk', repeat: 7 });
+            scale = player.setScale(2, 2);
         }
 
     }
