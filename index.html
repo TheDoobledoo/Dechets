@@ -56,6 +56,7 @@
     var running;
     var jumping;
     var raccoon;
+    var attacking;
 
     function preload()
     {
@@ -133,7 +134,7 @@
        let space = this.add.image(800, 290, 'SPACE');
        space.setScale(2);
 
-       //Create all animations       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
+       //Create all animations
        const walkAnimation = this.anims.create({
        key: 'walk',
        frames: this.anims.generateFrameNumbers('player'),
@@ -184,7 +185,7 @@
 
     function overlapRaccoon(player, raccoon)
     {
-      if (currentanimation === 'playerattack') {
+      if (attacking) {
         let timedanim = this.time.delayedCall(500, delayedAnim, [raccoon], this);
         let timedEvent = this.time.delayedCall(1000, delayedDeath, [raccoon], this);
       }
@@ -269,6 +270,7 @@
         }
 
         if (running) {
+          attacking = false;
           player.play({ key: 'walk', repeat: 7}, true);
         }
 
@@ -278,6 +280,7 @@
 
         if (!(keys.A.isDown) && !(keys.D.isDown) && !(keys.E.isDown) && !(jumping)) {
             running = false;
+            attacking = false;
             currentanimation = 'playeridle';
             player.play({ key: 'idle', repeat: 1}, true);
         }
@@ -285,7 +288,8 @@
           jumping = false;
         }
 
-        if (keys.E.isDown) {
+        if (keys.E.isDown && !(jumping) && !(keys.A.isDown) && !(keys.D.isDown)) {
+            attacking = true;
             currentanimation = 'playerattack';
             player.body.setSize(65, 60);
             player.play({ key: 'attack', repeat: 1}, true);
