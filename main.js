@@ -33,16 +33,17 @@ var game = new Phaser.Game(config);
 //Game Objects
 var platforms;
 var player;
-var currentanimation = 'player';
 
 //Keyboard controls
 var cursors;
 var keys;
 var space;
-var running;
-var jumping;
 var raccoon;
-var attacking;
+
+// State variables
+var running = false;
+var jumping = false;
+var attacking = false;
 
 function preload()
 {
@@ -152,10 +153,7 @@ function create()
 
     //Set up user input
     cursors = this.input.keyboard.createCursorKeys();
-    keys = this.input.keyboard.addKeys('A, D, E');
-    space = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    //mouse = this.input.mouse
-    space.on('down', jump); //calls jump function when space is pressed
+    keys = this.input.keyboard.addKeys('A, D, E, SPACE');
 
     //camera scroll
     this.cameras.main.setBounds(0, 0, 2700, 700); //(x, y, width, height) width bound for total level
@@ -241,56 +239,86 @@ function update()
         player.currentJumps = 0;
     }
 
-    if (keys.A.isDown)
-    {
+    // For convenience and clarity lets just name this
+    let leftDown = keys.A.isDown;
+    let rightDown = keys.D.isDown;
+    let jumpDown = keys.SPACE.isDown;
+    let attackDown = keys.E.isDown;
+
+    var wantsToRunLeft = false;
+    var wantsToRunRight = false;
+    var wantsToAttack = false;
+    var wantsToJump = false;
+
+    if (leftDown && !rightDown) {
+        wantsToRunLeft = true;
+        wantsToRunRight = false;
+        wantsToAttack = false;
+    } else if (!leftDown && rightDown) {
+        wantsToRunLeft = false;
+        wantsToRunRight = true;
+        wantsToAttack = false;
+    } else if (attackDown) {
+        wantsToRunLeft = false;
+        wantsToRunRight = false;
+        wantsToAttack = true;
+    }
+
+    if (jumpDown) {
+        wantsToJump = true;
+        wantsToAttack = false;
+    } else {
+        wantsToJump = false;
+    }
+
+    if (wantsToRunLeft) {
         running = true;
+        attacking = false;
         player.setVelocityX(-400);
         scale = player.setScale(-2, 2);
-    }
-
-    if (keys.D.isDown)
-    {
+        player.body.setSize(35, 60);
+    } else if (wantsToRunRight) {
         running = true;
+        attacking = false;
         player.setVelocityX(400);
         scale = player.setScale(2, 2);
-    }
-
-    if (running) {
-        attacking = false;
-        player.play({ key: 'walk', repeat: 7}, true);
-    }
-
-    if (jumping) {
-        player.setTexture('playerjump');
-    }
-
-    if (!(keys.A.isDown) && !(keys.D.isDown) && !(keys.E.isDown) && !(jumping)) {
+        player.body.setSize(35, 60);
+    } else if (wantsToAttack) {
+        running = false;
+        attacking = true;
+    } else {
         running = false;
         attacking = false;
-        currentanimation = 'playeridle';
-        player.play({ key: 'idle', repeat: 1}, true);
     }
-    if (player.body.onFloor()){
+
+    // Since we allow jumping while running we check it separately
+    if (wantsToJump) {
+        jumping = true;
+
+        // If you are jumping and are touching the ground, let's add the velocity
+        if (player.body.touching.down) {
+            player.setVelocityY(-1100);
+            player.currentJumps++;
+        }
+    }
+
+    // Regardless of what key was pressed you cannot be jumping if you are on the ground
+    if (player.body.touching.down) {
         jumping = false;
     }
 
-    if (keys.E.isDown && !(jumping) && !(keys.A.isDown) && !(keys.D.isDown)) {
-        attacking = true;
-        currentanimation = 'playerattack';
+    // Now let's set the animation
+    if (!running && !attacking && !jumping) {
+        currentanimation = 'playeridle';
+        player.play({ key: 'idle', repeat: 1}, true);
+    } else if (jumping) {
+        player.body.setSize(35, 60);
+        player.setTexture('playerjump');
+    } else if (running && !jumping) {
+        player.body.setSize(35, 60);
+        player.play({ key: 'walk', repeat: 7}, true);
+    } else if (attacking) {
         player.body.setSize(65, 60);
         player.play({ key: 'attack', repeat: 1}, true);
-    } else {
-        player.body.setSize(35, 60);
     }
 }
-
-function jump(event)
-{
-    jumping = true
-    if (player.body.touching.down) {
-        //If the player is on the ground, the player can jump
-        player.setVelocityY(-1100);
-        player.currentJumps++;
-    }
-}
-
